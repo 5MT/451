@@ -1,0 +1,449 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Tasks</title>
+<script type="text/javascript" src="data_dummy.js" ></script>
+<script type="text/javascript" src="data.js" ></script>
+<script>
+function bodyLoaded(){
+	// 表示タブ設定。初期値で Tasks を出す。button 要素で渡す。
+	focusTable(document.getElementById("buttonTasks"));
+
+	// ヘッダ月の準備
+	// ヘッダの月配列（本当は月の開始時刻の配列）定義
+	var arrDateBeginingOfTheMonth = [];
+	// 初期化
+	var iMonthShown = 36;	// 既定の表示は 3 年
+	for(iMonth=0; iMonth < iMonthShown; iMonth++){
+		var dateTemp = new Date(); 		// 現在時刻を一時格納
+		var iMonthNow = dateTemp.getMonth();
+		dateTemp=getDate0000(dateTemp);	// 本日の 00:00 に時間をトリム
+		dateTemp.setDate(1);				// 本日を含む月の最初の日の 00:00 に設定
+		//		dateTemp.setMonth(iMonthNow + iMonth);		// 1ヵ月ごとに足した値を作成
+		dateTemp.setMonth(0 + iMonth);		// 1ヵ月ごとに足した値を作成
+		arrDateBeginingOfTheMonth.push(dateTemp);	// 配列に追加
+	}
+	// ヘッダ年月の th を tr に追加していく
+	arrDateBeginingOfTheMonth.forEach(function(element, key, array){
+		// 追加する th 要素を準備
+		var thMonth  = document.createElement("th");
+		var thSpecial = document.createElement("th");
+		// ID を作成
+		thMonth.id = "thMonth" + getYyyymm(element);
+		thSpecial.id = "thSpecial" + getYyyymm(element);
+		// 月の値を書き込み
+		thMonth.innerHTML = ("0" + (element.getMonth()+1)).slice(-2);
+		// 現在月と同じだったらマーク用クラス設定
+		if(parseInt(getYyyymm(new Date())) == parseInt(getYyyymm(element))) {
+			thMonth.className	= "markNow";
+			thSpecial.className	= "markNow";
+		}			
+
+		// tr に追加
+		document.getElementById("trMonth").appendChild(thMonth);
+		document.getElementById("trSpecial").appendChild(thSpecial);
+		// ヘッダ年を描画する
+		if(element.getMonth() == 0){
+			// thSpecial.innerHTML = "*";
+			// 追加する th を作成
+			var thYear = document.createElement("th");
+			thYear.colSpan = 12;	// 年ごとに月列結合長さを指定
+			thYear.id = "thYear" + element.getFullYear();			// ID 作成
+			thYear.innerHTML = element.getFullYear();				// 年を書き込み
+			document.getElementById("trYear").appendChild(thYear);	// 要素追加
+		}
+	});
+
+	// アイテム値を描画する
+	// カテゴリ、アイテムの td 要素を作成
+	var tdCatCurrent	= document.createElement("id");
+	var tdItemCurrent	= document.createElement("id");
+
+	// arrTasks の行ごとに処理
+	arrTasks.forEach(function(element, key, array){
+		// 要素の作成
+		var trItem	= document.createElement("tr");
+			var tdCat	= document.createElement("td");
+			var tdItem	= document.createElement("td");
+			var tdStep	= document.createElement("td");
+			var tdStartPlan	= document.createElement("td");
+			var tdEndPlan	= document.createElement("td");
+			var tdStartWIP	= document.createElement("td");
+			var tdEndWIP	= document.createElement("td");
+		// ID の作成と取り付け
+		trItem.id	= "trItem"	+ key;
+			tdCat.id	= "tdCat"	+ key;
+			tdItem.id	= "tdItem"	+ key;
+			tdStep.id	= "tdStep"	+ key;		
+			tdStartPlan.id	= "tdStartPlan"	+ key;
+			tdEndPlan.id	= "tdEndPlan"	+ key;
+			tdStartWIP.id	= "tdStartWIP"	+ key;
+			tdEndWIP.id		= "tdEndWIP"	+ key;
+		// Task データを 1 行ロード
+		tdCat.innerHTML		= element[1];
+		tdItem.innerHTML	= element[2];
+		tdStep.innerHTML	= element[3];
+		tdStartPlan.innerHTML	= element[4];
+		tdEndPlan.innerHTML		= element[5];
+		tdStartWIP.innerHTML	= element[6];
+		tdEndWIP.innerHTML		= element[7];
+
+		// カテゴリとアイテムのセルを整形し、tr に追加
+		//
+		// カテゴリが前の行と違っていた行とき
+		if(tdCatCurrent.innerHTML != tdCat.innerHTML){
+			tdCat.rowSpan = "1";
+			trItem.appendChild(tdCat);
+			tdCatCurrent = tdCat;		// 現在値の保管			
+			tdItem.rowSpan = "1";
+			trItem.appendChild(tdItem);
+			tdItemCurrent = tdItem;		// 現在値の保管
+		} else {
+			tdCatCurrent.rowSpan = parseInt(tdCatCurrent.rowSpan) + 1;
+			// そのうえアイテムが前の行と違っていたとき
+			if(tdItemCurrent.innerHTML != tdItem.innerHTML){
+				tdItem.rowSpan = "1";
+				trItem.appendChild(tdItem);
+				tdItemCurrent = tdItem;	// 現在値の保管
+			// カテゴリもアイテムも前の行と同じとき
+			} else {
+				tdItemCurrent.rowSpan = parseInt(tdItemCurrent.rowSpan) + 1;
+			}
+		}
+
+		if(element[8] == "done") {
+			tdStep.className = "markDoneLine";
+			tdStartPlan.className = "markDoneLine";
+			tdEndPlan.className = "markDoneLine";
+			tdStartWIP.className = "markDoneLine";
+			tdEndWIP.className = "markDoneLine";
+		}			
+
+		// ステップ以下のセルを tr に追加
+		trItem.appendChild(tdStep);
+		trItem.appendChild(tdStartPlan);
+		trItem.appendChild(tdEndPlan);
+		trItem.appendChild(tdStartWIP);
+		trItem.appendChild(tdEndWIP);
+
+		// 日付グリッドのを tr 行に追加
+		arrDateBeginingOfTheMonth.forEach(function(gridElement, gridKey, gridArray){
+			var tdGrid  = document.createElement("td");
+			var sMonth = getYyyymm(gridElement);
+			tdGrid.id = "tdGrid" + sMonth;
+			
+			if(parseInt(getYyyymm(new Date())) == parseInt(sMonth)) {
+				tdGrid.className = "markNow";
+			}
+			if(element[8] == "done") {
+				tdGrid.className = "markDoneLine";
+			}			
+			if((parseInt(element[4]) <= parseInt(sMonth)) & (parseInt(sMonth) <= parseInt(element[5]))) {
+				tdGrid.className = "markPlan";
+			}
+			if((parseInt(element[6]) <= parseInt(sMonth)) & (parseInt(sMonth) <= parseInt(element[7]))) {
+				if(element[8] == "done") {
+					tdGrid.className = "markDone";
+				} else {
+					tdGrid.className = "markWIP";
+				}
+			}
+			trItem.appendChild(tdGrid);
+		});
+		
+		// tr 行を tbody に追加
+		document.getElementById("tbodyItems").appendChild(trItem);
+	});
+
+
+	// arrThemes の行ごとに処理
+	arrThemes.forEach(function(element, key, array){
+		// 要素の作成
+		var trItem	= document.createElement("tr");
+			var tdTheme	        = document.createElement("td");
+			var tdActive	    = document.createElement("td");
+			var tdDescription	= document.createElement("td");
+		// ID の作成と取り付け
+		trItem.id	= "trThemeItem"	+ key;
+			tdTheme.id	        = "tdTheme"         	+ key;
+			tdActive.id	        = "tdThemeActive"	    + key;
+			tdDescription.id	= "tdThemeDescription"	+ key;		
+		// Task データを 1 行ロード
+		tdTheme.innerHTML		= element[0];
+		tdActive.innerHTML	    = element[1];
+		tdDescription.innerHTML	= element[2];
+
+		// カテゴリとアイテムのセルを整形し、tr に追加
+		trItem.appendChild(tdTheme);
+		trItem.appendChild(tdActive);
+		trItem.appendChild(tdDescription);
+		
+		// tr 行を tbody に追加
+		document.getElementById("tbodyThemes").appendChild(trItem);
+	});
+
+	// arrTeams の行ごとに処理
+	arrTeams.forEach(function(element, key, array){
+		// 要素の作成
+		var trItem	= document.createElement("tr");
+			var tdTeam	        = document.createElement("td");
+			var tdActive	    = document.createElement("td");
+			var tdDescription	= document.createElement("td");
+			var tdLastContact	= document.createElement("td");
+		// ID の作成と取り付け
+		trItem.id	= "trTeamItem"	+ key;
+			tdTeam.id	        = "tdTeam"          	+ key;
+			tdActive.id	        = "tdTeamActive"	    + key;
+			tdDescription.id	= "tdTeamDescription"	+ key;
+			tdLastContact.id	= "tdTeamLastContact"	+ key;	
+		// Task データを 1 行ロード
+		tdTeam.innerHTML		= element[0];
+		tdActive.innerHTML	    = element[1];
+		tdDescription.innerHTML	= element[2];
+		tdLastContact.innerHTML	= element[3];
+
+		// カテゴリとアイテムのセルを整形し、tr に追加
+		trItem.appendChild(tdTeam);
+		trItem.appendChild(tdActive);
+		trItem.appendChild(tdDescription);
+		trItem.appendChild(tdLastContact);
+		
+		// tr 行を tbody に追加
+		document.getElementById("tbodyTeams").appendChild(trItem);
+	});
+
+   // ★デバッグ
+	document.getElementById("footer").innerText="bodyLoaded";
+
+} // function bodyLoaded() の終わり
+
+// ページ独自の関数群
+//
+// タブを切り替える
+function focusTable(buttonClicked) {
+	document.getElementById("buttonTasks").className="";
+	document.getElementById("buttonThemes").className="";
+	document.getElementById("buttonTeams").className="";
+
+	buttonClicked.className = "hilighted";
+
+	document.getElementById("tableTasks").style.display="none";
+	document.getElementById("tableThemes").style.display="none";
+	document.getElementById("tableTeams").style.display="none";
+
+	document.getElementById(buttonClicked.getAttribute("data-AssociatedTableId")).style.display="block";
+	return;
+}
+
+// ユーティリティ関数群
+//
+// 日付文字列を取得する
+function getYyyymm(dateArg){
+	var sDate = dateArg.getFullYear()+("0"+( dateArg.getMonth()+1 ) ).slice(-2); //+("0"+dateArg.getDate() ).slice(-2);
+    return sDate;
+}
+// 月末日の日にち
+function getLastDateOfTheMonth(dateArg){
+	var  dateLastOfTheMonth = new Date(dateArg.getFullYear(),dateArg.getMonth()+1,0);
+    return dateLastOfTheMonth.getDate();
+}
+// その日の 0 時を返す
+function getDate0000(dateArg){
+	dateArg.setMilliseconds(0);
+	dateArg.setSeconds(0);
+	dateArg.setMinutes(0);
+	dateArg.setHours(0);
+	return dateArg;
+}
+</script>
+<style>
+article, aside, dialog, figure, footer, header, hgroup, menu, nav, section { display: block; }
+
+* {
+	margin: 0;
+}
+
+/* レイアウト */
+html, body, form{
+	height: 100%;
+}
+#wrapper {
+	min-height: 100%;
+	height: auto !important; /* This line and the next line are not necessary unless you need IE6 support */
+	height: 100%;
+/*	margin: 0 auto -30px; /* the bottom margin is the negative value of the footer's height */
+	margin: 0 0 -30px 0; /* the bottom margin is the negative value of the footer's height */
+}
+#footer, #push {
+	height: 30px; /* .push must be the same height as .footer */
+/*	margin: 0 auto; */
+	margin: 0 0;
+	line-height: 30px;
+}
+#header {
+	height: 30px;
+	line-height: 30px;
+}
+
+/* 外観 */
+#header {
+	/* border: 1px darkgreen dotted;	*/
+	color: white;
+	background-color: #227446;
+	height: 30px;
+	padding: 0 5px;
+	position: relative;
+}
+#wrapper {
+/*	width: 600px; */
+	/* border: 1px maroon dashed; */
+	background-color: #e6e6e6;
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+#footer {
+/*	width: 600px; */
+	border: 1px navy dashed;
+/*	visibility: hidden; */
+}
+#content {
+	padding: 5px;
+	/* border: 1px red dashed; */
+	overflow-x: scroll;
+}
+table {
+	border-collapse: collapse;
+	background-color: white;
+	font-size: 10px;
+}
+td, th {
+	margin: 0;
+	border: 1px gray solid;
+	white-space: nowrap;
+}
+td[id^="tdCat"]{
+	width: 20px;
+	white-space: normal;
+	text-align: center;
+	/* transform: rotate(90deg); */
+	/* -webkit-transform: rotate( 90deg );  Chrome,Safari,新しいOpera用 */
+}
+td.markNow, th.markNow {
+	background-color: yellow;
+}
+td.markPlan {
+	background-color: #99bb5c;
+}
+th.markPlan {
+	background-color: #d9e4bc;
+}
+td.markWIP {
+	background-color: #bf4f4b;
+}
+th.markWIP {
+	background-color: #f1dcdb;
+}
+td.markDone {
+	background-color: #4F81BD;
+}
+th.markDone {
+	background-color: #4F81BD;
+}
+td.markDoneLine {
+	background-color: lightgray;
+}
+tr:nth-child(2n+1) {
+	background-color: #e8e8ff;
+}
+td[id^="tdGrid"], th[id^="thMonth"], th[id^="thSpecial"] {
+	font-size: 6px;
+	width: 12px;
+	font-weight: normal;
+}
+button {
+	border: 0;
+	background-color: #b0c0b0;
+	color : gray;
+	font-weight: bold;
+	height: 23px;
+	width: 60px;
+	line-height: 0;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	padding: 0;
+}
+button:hover {
+	color : #227446;
+}
+#buttonTasks{
+	margin: auto 0 0 0;
+}
+#buttonThemes{
+	margin: auto 0 0 70px;
+}
+#buttonTeams{
+	margin: auto 0 0 140px;
+}
+button.hilighted {
+	background-color: #e6e6e6;
+	color : #227446;
+}
+
+</style>
+</head>
+
+<body onLoad="bodyLoaded()" >
+
+
+<div id="wrapper">
+	<div id="header"><header>
+	<button id="buttonTasks" data-AssociatedTableId="tableTasks" onClick="focusTable(this)">Tasks</button>
+	<button id="buttonThemes" data-AssociatedTableId="tableThemes" onClick="focusTable(this)">Themes</button>
+	<button id="buttonTeams" data-AssociatedTableId="tableTeams" onClick="focusTable(this)">Teams</button>
+	</header></div>
+
+	<div id="content">
+	<!-- Tasks table block -->
+	<table id="tableTasks">
+		<thead>
+		<tr id="trYear">   <th></th>      <th></th>       <th></th>               <th></th>        <th></th>      <th></th>       <th></th>     </tr>
+		<tr id="trMonth"> <th></th>     <th></th>       <th></th>                <th colspan="2">Plan</th>     <th colspan="2">WIP</th>    </tr>
+		<tr id="trSpecial">
+			<th>Cat</th><th>Item</th><th>Step/Memo</th>
+			<th class="markPlan">Start</th><th class="markPlan">End</th>
+			<th class="markWIP">Start</th><th class="markWIP">End</th>
+		</tr>
+		</thead>
+		<tbody id="tbodyItems">
+		</tbody>
+	</table>
+	<!-- Themes table block -->
+	<table id="tableThemes">
+		<thead>
+		<tr id="trThemeHeader"><th>Theme</th><th>Now</th><th>Description</th></tr>
+		</thead>
+		<tbody id="tbodyThemes">
+		</tbody>		
+	</table>
+	<!-- Team table block -->
+	<table id="tableTeams">
+		<thead>
+		<tr id="trTeamHeader"><th>Team</th><th>Description</th><th>Last</th><th>Action</th></tr>
+		</thead>
+		<tbody id="tbodyTeams">
+		</tbody>		
+	</table>
+	</div>
+
+	<div id="push">
+	</div>
+</div>
+
+
+<div id="footer"><footer>
+	Footer here
+</footer></div>
+</body>
+
+</html>
